@@ -1,0 +1,6 @@
+# Bootstrap creates/restores this volume before Compose starts production.
+# Keep production session data independent of Compose teardown.
+volumes:
+  checkin-data:
+    external: true
+    name: uestc-checkin_checkin-data

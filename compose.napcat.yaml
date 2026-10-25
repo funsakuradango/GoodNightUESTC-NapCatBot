@@ -1,0 +1,11 @@
+# Optional: connect only to an EXISTING robot network. No robot configuration changes.
+services:
+  cli:
+    networks: [default, bot]
+  scheduler:
+    networks: [default, bot]
+
+networks:
+  bot:
+    external: true
+    name: ${BOT_NETWORK:?Set BOT_NETWORK to the actual existing robot Docker network}

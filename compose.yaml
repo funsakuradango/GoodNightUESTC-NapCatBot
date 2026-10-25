@@ -1,0 +1,60 @@
+name: uestc-checkin
+
+x-common: &common
+  image: uestc-checkin:local
+  build:
+    context: .
+    target: runtime
+  init: true
+  env_file: .env
+  environment:
+    TZ: Asia/Shanghai
+  volumes:
+    - checkin-data:/app/data
+  shm_size: 256mb
+  mem_limit: 768m
+  cpus: 1.0
+  security_opt:
+    - seccomp=./seccomp_profile.json
+  cap_drop:
+    - ALL
+  # Chromium's namespace sandbox needs chroot in its child user namespace.
+  cap_add:
+    - SYS_CHROOT
+  logging:
+    driver: json-file
+    options:
+      max-size: '10m'
+      max-file: '3'
+
+services:
+  cli:
+    <<: *common
+    profiles: [tools]
+    restart: 'no'
+  scheduler:
+    <<: *common
+    profiles: [scheduled]
+    command: [schedule]
+    restart: unless-stopped
+  test:
+    <<: *common
+    profiles: [tools]
+    entrypoint: [python, -m, pytest]
+    command: [-q, -p, no:cacheprovider]
+  debug:
+    <<: *common
+    image: uestc-checkin:debug
+    build:
+      context: .
+      target: debug
+    profiles: [debug]
+    environment:
+      TZ: Asia/Shanghai
+      TASK_TIMEOUT_SECONDS: '600'
+    ports:
+      - '127.0.0.1:6080:6080'
+    restart: 'no'
+
+volumes:
+  checkin-data:

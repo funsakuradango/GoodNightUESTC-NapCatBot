@@ -1,0 +1,41 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+credentials*.json
+# Runtime, session, backups and research exports
+/data/
+/runtime/
+/backups/
+/private-data/
+/private-docs/
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.log
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+/robots-*.txt
+/base-*.json
+# Local overrides and developer environments
+compose.override.yaml
+compose.override.yml
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+node_modules/
+.idea/
+.vscode/
+.DS_Store
+._*

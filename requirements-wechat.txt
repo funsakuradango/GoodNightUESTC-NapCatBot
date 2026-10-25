@@ -1,0 +1,2 @@
+# Protocol implementation reviewed at this exact commit; never import its main.py.
+moon-uestc @ https://codeload.github.com/MioYiSama/moon-uestc/zip/f8a93c3bc4d62cea879b76560c49c9646387b386

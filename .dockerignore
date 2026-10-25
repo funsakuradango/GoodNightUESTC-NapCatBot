@@ -1,0 +1,18 @@
+.env
+.env.*
+.venv
+.pytest_cache
+__pycache__
+**/__pycache__
+data
+backups
+*.log
+robots-*.txt
+base-*.json
+.git
+README.md
+REQUIREMENTS.md
+
+# macOS metadata
+.DS_Store
+**/._*
