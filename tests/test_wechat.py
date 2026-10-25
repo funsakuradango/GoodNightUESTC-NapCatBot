@@ -166,10 +166,11 @@ class Route:
 
 
 @pytest.mark.parametrize('status', [200, 302])
-def test_post_exactly_once_and_redirect_is_not_followed(status):
+@pytest.mark.parametrize('suffix', ['', '?'])
+def test_post_exactly_once_and_redirect_is_not_followed(status, suffix):
     async def scenario():
         guard = TicketGuard(TICKET)
-        first, second = Route(status=status), Route()
+        first, second = Route(CHECKIN_URL + suffix, status=status), Route()
         await guard.handle(first)
         await guard.handle(second)
         options = first.actions[0][1]
@@ -217,7 +218,7 @@ def test_browser_storage_to_one_post_and_no_ticket_on_readback(monkeypatch):
                   const t = sessionStorage.getItem('daily-checkin-operation-ticket');
                   await fetch('/today', {headers: {'X-Checkin-Ticket': t}});
                   for (let i=0; i<2; i++) {
-                    try { await fetch('/checkin', {method:'POST',
+                    try { await fetch('/checkin?', {method:'POST',
                       headers: {'Content-Type':'application/json', 'platform':'h5',
                                 'X-Checkin-Ticket':t}, body:'{"fixture":true}'}); }
                     catch(e) {}

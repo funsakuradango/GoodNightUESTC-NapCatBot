@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import re
 import sys
+from urllib.parse import urlsplit
 
 from .wechat_worker import atomic_private
 
@@ -71,7 +72,9 @@ class TicketGuard:
         request = route.request
         headers = await request.all_headers()
         headers.pop('x-checkin-ticket', None)
-        if request.url == CHECKIN_URL and request.method == 'POST':
+        # The H5 appends an empty '?' even when there are no query parameters.
+        # Compare parsed URLs so this equivalent form still receives its ticket.
+        if urlsplit(request.url) == urlsplit(CHECKIN_URL) and request.method == 'POST':
             if self.used:
                 await route.abort('blockedbyclient')
                 return
