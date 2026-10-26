@@ -10,6 +10,7 @@ import sys
 
 from .config import Config
 from .auth import AuthManager, Result, Status
+from .diagnostics import browser_runtime, cleanup, report_error
 
 
 def failure_result(error, command):
@@ -56,7 +57,6 @@ def task_lock(path):
 
 
 async def run_browser(config, command, *, setup_context=None):
-    from playwright.async_api import async_playwright
     from .geo import configure_geolocation
     from .checkin import CheckinManager
     from .state import StateStore
@@ -64,7 +64,7 @@ async def run_browser(config, command, *, setup_context=None):
         config.validate_checkin(submit=command == 'run')
     config.profile.mkdir(parents=True, mode=0o700, exist_ok=True)
     config.profile.chmod(0o700)
-    async with async_playwright() as p:
+    async with browser_runtime() as p:
         context = await p.chromium.launch_persistent_context(
             str(config.profile), headless=command != 'manual-login',
             timezone_id='Asia/Shanghai', accept_downloads=False,
@@ -98,7 +98,10 @@ async def run_browser(config, command, *, setup_context=None):
                         page, submit=command == 'run')
                 return result
         finally:
-            await context.close()
+            # Drain route callbacks before closing their pages and connection.
+            await cleanup('browser_unroute_all',
+                          lambda: context.unroute_all(behavior='wait'))
+            await cleanup('browser_context_close', context.close)
 
 
 def main():
@@ -124,6 +127,7 @@ def main():
             try:
                 result = asyncio.run(run_browser(config, args.command))
             except Exception as error:
+                report_error('browser_task', error)
                 result = failure_result(error, args.command)
             notification = 'disabled'
             if args.command in ('run', 'status'):

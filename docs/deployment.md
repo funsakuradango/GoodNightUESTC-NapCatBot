@@ -63,3 +63,5 @@ docker cp goodnightuestc-authorize:/app/data/wechat-authorization.png /安全的
 停止调度 → 备份配置、卷与旧镜像 → 更新源码、构建和测试 → check、wechat-ticket → 核对后恢复调度。回滚程序时不盲目覆盖每日状态，防止丢失升级后已产生的记录。
 
 遇到 UNKNOWN 或 SUBMITTING，先在官方页面或 status 中回查；不要清空状态强行再提交。微信授权失效时停止调度，在无任务运行时移除本项目 wechat 目录中的授权缓存，再重新扫码；保留浏览器会话和每日状态。
+
+任务日志中的 `operation_error` 包含阶段、异常类型和调用文件/行号，不包含异常原文、页面内容或凭据。`checkin_ticket_unroute`、`browser_unroute_all`、`browser_context_close`、`playwright_stop` 分别表示移除票据拦截、清理剩余拦截、关闭浏览器及停止驱动；清理各自最多等待 5 秒，异常只记录诊断，不覆盖已核验的业务结果。`browser_task` 表示业务执行异常，仍按原规则返回失败。移除拦截时等待正在执行的处理函数结束，再关闭浏览器。

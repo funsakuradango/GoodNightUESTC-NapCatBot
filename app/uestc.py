@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 
 from .checkin import CheckinManager, CheckinResult
 from .state import TZ, now
+from .diagnostics import cleanup
 
 TODAY_PATH = '/daily-checkin/api/student-checkin-record/today'
 SCHEDULE_PATH = '/daily-checkin/api/checkin-schedule/effective'
@@ -121,5 +122,8 @@ class UestcCheckinManager(CheckinManager):
             if self.tasks:
                 await asyncio.gather(*self.tasks, return_exceptions=True)
             if guard:
-                await context.unroute('**/*', guard.handle)
                 guard.ticket = None
+                # This dedicated context is about to close. Unlike unroute(),
+                # wait for active handlers before tearing down the browser.
+                await cleanup('checkin_ticket_unroute',
+                              lambda: context.unroute_all(behavior='wait'))
