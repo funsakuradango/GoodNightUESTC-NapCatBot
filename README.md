@@ -6,13 +6,13 @@
 
 ## 能力与验证状态
 
-- 学校会话恢复，验证码或二次认证时暂停自动登录。
+- 首次在容器浏览器完成学校短信验证并信任该环境；保存学校账号密码后，后续复用受信任环境登录，验证码或二次认证时暂停自动登录。
 - 首次微信扫码授权应用宝，保存加密凭据，后续免扫码申请新的小程序 code 和学校 ticket。
 - 提交前核对学校身份；每次获取新票据，限制一次指定签到 POST，并查询当日记录确认结果。
 - 每日定时任务、持久化防重状态，以及独立的 QQ 通知补发队列。
 - 无需运行 Android 模拟器或常驻桌面微信。
 
-**当前已验证**学校会话恢复、云端扫码取票、跨进程免扫码取票、主动刷新及刷新后取票，以及新协议票据下的正式签到与记录回查。跨日连续运行与实际到期刷新仍待验证。离线测试与真实验证分别记录在 [验证说明](docs/validation.md)，不以模拟测试代替线上结果。
+**当前已验证**学校会话恢复、受信任浏览器环境中的账号密码重新登录、云端扫码取票、跨进程免扫码取票、主动刷新及刷新后取票，以及新协议票据下的正式签到与记录回查。已有跨日成功记录，长期连续无人值守与协议凭据实际到期刷新仍待验证。离线测试与真实验证分别记录在 [验证说明](docs/validation.md)，不以模拟测试代替线上结果。
 
 ## 工作原理
 
@@ -50,7 +50,7 @@ docker compose run --rm cli demo
 
 首次使用依次完成：
 
-1. 按 [首次配置与登录](docs/getting-started.md) 在专用容器浏览器登录学校。
+1. 按 [首次配置与登录](docs/getting-started.md) 在实际运行的专用容器浏览器完成学校短信验证并信任环境，将学校账号密码保存到该部署的私有 `.env`，验证后续密码登录。远端部署应在服务器上完成这些操作。
 2. 运行 `bash scripts/wechat-authorize.sh`，用已绑定学校账号的微信扫码确认应用宝授权。该命令只验证取票。
 3. 运行 `docker compose run --rm cli wechat-ticket`，验证免扫码取票。
 4. 按 [配置说明](docs/configuration.md) 核对位置与业务配置；需要 QQ 通知时再接入 NapCat。
@@ -91,6 +91,7 @@ docker compose -f compose.yaml -f compose.napcat.yaml run --rm cli status
 | [配置说明](docs/configuration.md) | 环境变量、位置、命令与副作用 |
 | [微信授权链路](docs/wechat-authorization.md) | OAuth、双 code、SESSION 与 ticket 请求头 |
 | [NapCat 接入](docs/napcat.md) | 网络、鉴权、通知和补发 |
+| [管理页面](docs/management.md) | 学校账号配置、短信验证浏览器、微信扫码与调度开关 |
 | [部署与运维](docs/deployment.md) | 定时任务、数据卷、备份、恢复与升级 |
 | [开发与测试](docs/development.md) | 两套 Python 运行时及离线测试 |
 | [验证说明](docs/validation.md) | 已验证能力与尚未覆盖的场景 |

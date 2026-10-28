@@ -2,11 +2,13 @@
 
 配置放在仓库根目录 `.env`，文件权限必须为 0600；模板为 `.env.example`。密码包含 `$` 等插值字符时使用单引号。实际凭据通过容器环境注入，不写入镜像或文档。
 
+启用 [管理页面](management.md) 后，网页保存的学校账号、密码和调度开关写入私有数据卷 `settings.json`（0600），优先于 `.env`，无需重建容器。其余部署字段仍由 `.env` 提供；不要在两个来源间交替修改已覆盖的同一字段。
+
 ## 主要字段
 
 | 字段 | 说明 |
 | --- | --- |
-| `UESTC_USERNAME` / `UESTC_PASSWORD` | 学校账号；可留空后人工登录，学号非空时用于身份核对 |
+| `UESTC_USERNAME` / `UESTC_PASSWORD` | 保存到实际运行端私有 `.env` 的学校账号密码；先在同一容器浏览器完成首次短信验证和环境信任，后续用于密码登录；学号非空时用于身份核对 |
 | `CHECKIN_ADAPTER` | 示例为 uestc；generic 使用通用状态选择器 |
 | `CHECKIN_ENTRY_SELECTOR` / `CHECKIN_URL` | 学校首页入口或直接业务地址，任选一种 |
 | `CHECKIN_FRAME_SELECTOR` | 可选，业务位于 iframe 时填写 |
@@ -24,6 +26,8 @@
 `CHECKIN_PENDING_SELECTOR`、`CHECKIN_COMPLETED_SELECTOR`、`CHECKIN_TIME_SELECTOR` 用于 generic 适配器，UESTC 适配器通过学校返回的今日记录与有效时段判断状态。固定 generic 选择器不能替代对真实学校页面的核对。
 
 Docker 镜像默认将 `WECHAT_PYTHON` 设置为独立 Python 3.13 路径，通常不需要在 `.env` 覆盖；设置为空会失去这个默认值。
+
+学校账号密码与 `browser-profile` 配合使用。两项均留空时，只能复用尚有效的学校会话或人工登录，会话失效将返回 `AUTH_REQUIRED / credentials_required`。首次短信验证、信任环境及后续重新验证由本人在学校页面完成，程序不自动处理短信验证码。远端部署不能只修改本机 `.env`；服务器文件修改后需要重新创建 scheduler，普通 `restart` 不会更新容器环境变量，步骤见 [部署说明](deployment.md#保存远端账号密码与更新配置)。
 
 位置配置会传给容器浏览器的 Geolocation；学校页面负责后续坐标处理。不要混用 WGS84 和 GCJ-02。配置成功不等于服务端接受，也不等于设备实时定位或人员在场。
 

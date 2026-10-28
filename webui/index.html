@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>晚安成电 · 管理</title>
+  <link rel="stylesheet" href="/files/assets/style.css">
+</head>
+<body>
+  <main>
+    <header><div><div class="eyebrow">GOODNIGHT UESTC</div><h1>晚安成电 <span>管理台</span></h1><p>维护学校登录与微信授权，让每晚的任务按时运行。</p></div><div class="actions"><button id="refresh" class="secondary">刷新状态</button><button id="logout" class="secondary" hidden>退出登录</button></div></header>
+    <div id="notice" class="notice" role="status" aria-live="polite">正在连接服务…</div>
+    <section id="login-panel" class="card" hidden><div class="card-title"><span class="number">🌙</span><div><h2>管理登录</h2><p>使用现有 NapCat WebUI Token 验证身份</p></div></div><form id="admin-login"><label for="admin-token">NapCat WebUI Token</label><input id="admin-token" type="password" autocomplete="current-password" required placeholder="填写 NapCat 管理后台 Token"><label for="totp">动态验证码（仅启用两步验证时填写）</label><input id="totp" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="未启用则留空"><button type="submit">登录管理台</button></form><p class="muted small">使用 SSH 隧道访问。Token 只用于服务器向 NapCat 验证，浏览器不保存原始 Token；登录会话有效期一小时。</p></section>
+    <section id="overview" class="overview" aria-label="运行概览" hidden>
+      <div><span>学校登录</span><strong id="school-status">待检查</strong></div>
+      <div><span>微信授权</span><strong id="wechat-status">待检查</strong></div>
+      <div><span>每日调度</span><strong id="schedule">—</strong></div>
+      <div><span>今日记录</span><strong id="today">—</strong></div>
+    </section>
+    <div id="workspace" class="columns" hidden>
+      <section class="card">
+        <div class="card-title"><span class="number">01</span><div><h2>学校账号</h2><p>沿用服务器上的受信任浏览器环境</p></div></div>
+        <form id="credentials">
+          <label for="username">学校账号</label><input id="username" name="username" autocomplete="username" maxlength="512" placeholder="输入学校账号" required>
+          <label for="password">学校密码 <span id="password-hint" class="muted"></span></label><input id="password" name="password" type="password" autocomplete="new-password" maxlength="512" placeholder="留空则保留已保存的密码">
+          <button type="submit" data-task>保存账号配置</button>
+        </form>
+        <div class="actions"><button data-action="check" class="secondary" data-task>检查已有会话</button><button data-action="login" data-task>验证账号登录</button></div>
+        <div id="paused" class="callout" hidden>上次登录需要人工处理。请先核对账号密码，或完成浏览器验证。<button id="resume-login" class="secondary" data-task>已核对，解除暂停并登录一次</button></div>
+        <div class="callout"><strong>首次登录需要短信验证与环境信任</strong><p>首次使用或学校再次要求验证时，打开服务器浏览器，在学校官方页面完成短信验证码，并信任该环境。之后才可复用此环境进行账号密码登录。</p><button id="manual-login" class="secondary" data-task>启动学校验证浏览器</button><a id="browser-link" href="http://127.0.0.1:6080/vnc.html?autoconnect=true&amp;resize=scale" target="_blank" rel="noopener noreferrer" hidden>打开验证浏览器 ↗</a><p class="muted small">远端访问需将服务器 6080 端口通过 SSH 转发到本机 6080。浏览器最多开放 10 分钟，退出后自动关闭。</p></div>
+      </section>
+      <div class="right-column">
+        <section class="card">
+          <div class="card-title"><span class="number">02</span><div><h2>微信授权</h2><p>使用已绑定学校账号的本人微信</p></div></div>
+          <p>首次授权时展示应用宝二维码，用手机微信扫码并确认。已有有效授权时直接复用，不会重新要求扫码。</p>
+          <div class="actions"><button data-action="wechat-authorize" data-task>扫码授权 / 恢复授权</button><button data-action="wechat-ticket" class="secondary" data-task>验证免扫码取票</button></div>
+          <div id="qr-area" hidden><img id="qr" alt="微信应用宝授权二维码" width="230" height="230"><p>请使用本人微信扫码并确认，授权完成后二维码自动隐藏。</p></div>
+        </section>
+        <section class="card">
+          <div class="card-title"><span class="number">03</span><div><h2>任务与调度</h2><p id="date">以北京时间计算每日记录</p></div></div>
+          <label class="toggle"><input id="enabled" type="checkbox" data-task><span>允许每日定时签到</span></label>
+          <p class="muted small">开关即时生效；暂停时保留会话与每日记录。恢复后按原调度规则运行，已触发过的当天不会自动补跑。</p>
+          <div class="job"><span id="job-label">最近管理操作</span><strong id="job-result">暂无操作</strong></div>
+          <button data-action="status" class="secondary" data-task>查询今日官方记录</button>
+          <button id="cancel" class="secondary" hidden>取消当前管理操作</button>
+          <p class="muted small">登录与授权验证不提交签到、不发送 QQ 通知。此页不提供手动签到按钮。</p>
+        </section>
+      </div>
+    </div>
+    <footer>账号配置保存在服务器私有数据卷中，密码不会回显。管理操作通过私有连接进行。</footer>
+  </main>
+  <script type="module" src="/files/assets/app.js"></script>
+</body>
+</html>

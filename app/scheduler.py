@@ -8,7 +8,8 @@ from .state import StateStore, now
 
 def serve(config):
     from .main import task_lock
-    config.validate_checkin(submit=True)
+    from .settings import apply_settings
+    config.validate_checkin(submit=False)
     while True:
         current = now()
         date = current.date().isoformat()
@@ -16,10 +17,13 @@ def serve(config):
         try:
             with task_lock(config.data_dir / 'task.lock'):
                 store = StateStore(config.data_dir)
+                effective = apply_settings(config)
                 # Catch up only within the configured hour, once per calendar day.
-                due = (current.hour == config.checkin_hour and current.minute >= config.checkin_minute
+                due = (effective.checkin_enabled
+                       and current.hour == effective.checkin_hour and current.minute >= effective.checkin_minute
                        and store.data.get('scheduled_date') != date)
                 if due:
+                    effective.validate_checkin(submit=True)
                     store.data['scheduled_date'] = date
                     store.save()
         except BlockingIOError:

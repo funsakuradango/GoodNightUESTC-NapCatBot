@@ -28,6 +28,7 @@ RUN sed -i 's|http://|https://|g' /etc/apt/sources.list /etc/apt/sources.list.d/
     && rm -rf /var/lib/apt/lists/*
 COPY --chown=pwuser:pwuser app ./app
 COPY --chown=pwuser:pwuser tests ./tests
+COPY --chown=pwuser:pwuser webui ./webui
 COPY --chmod=755 scripts/debug-browser.sh /usr/local/bin/debug-browser
 USER pwuser
 ENV DISPLAY=:99

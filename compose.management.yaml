@@ -1,0 +1,38 @@
+# Optional management page; authenticate with the existing NapCat WebUI Token.
+services:
+  management:
+    image: uestc-checkin:management
+    build:
+      context: .
+      target: debug
+    init: true
+    entrypoint: [python, -m, app.management]
+    env_file: .env
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - checkin-data:/app/data
+    # Only the existing trusted SSH tunnel can reach the interactive school browser.
+    # The management page/API is only published on host loopback for SSH access.
+    ports:
+      - '127.0.0.1:6081:8080'
+      - '127.0.0.1:6080:6080'
+    networks: [default, bot]
+    shm_size: 256mb
+    mem_limit: 768m
+    cpus: 1.0
+    security_opt:
+      - seccomp=./seccomp_profile.json
+    cap_drop: [ALL]
+    cap_add: [SYS_CHROOT]
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+networks:
+  bot:
+    external: true
+    name: ${BOT_NETWORK:?Set BOT_NETWORK to the existing robot Docker network}

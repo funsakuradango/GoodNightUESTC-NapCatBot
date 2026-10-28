@@ -109,11 +109,12 @@ class Config:
             raise ValueError('notification_configuration_incomplete')
         if fields['qq_user_id'] and not fields['qq_user_id'].isdigit():
             raise ValueError('qq_user_id')
-        return cls(username=os.getenv('UESTC_USERNAME', ''),
+        from .settings import apply_settings
+        return apply_settings(cls(username=os.getenv('UESTC_USERNAME', ''),
                    password=os.getenv('UESTC_PASSWORD', ''),
                    success_selector=selector, checkin_enabled=enabled == 'true',
                    checkin_adapter=os.getenv('CHECKIN_ADAPTER', 'generic').strip(),
                    wechat_ticket_enabled=ticket_enabled == 'true',
                    wechat_python=os.getenv('WECHAT_PYTHON', '').strip(),
                    latitude=latitude, longitude=longitude, accuracy=accuracy,
-                   checkin_hour=hour, checkin_minute=minute, **fields, **values)
+                   checkin_hour=hour, checkin_minute=minute, **fields, **values))

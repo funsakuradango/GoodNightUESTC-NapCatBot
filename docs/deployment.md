@@ -16,6 +16,8 @@ docker compose --profile scheduled stop scheduler
 
 ## 远程学校登录
 
+已启用 [管理页面](management.md) 时，优先使用页面的学校验证入口；如需手动运行旧 debug 服务，先停止 management 释放 6080 端口，完成后关闭 debug 再恢复 management。
+
 先停止 scheduler，再开启 debug 容器。debug 只绑定服务器回环地址，通过 SSH 隧道访问：
 
 ```bash
@@ -25,7 +27,40 @@ docker compose --profile debug up -d debug
 ssh -N -L 6080:127.0.0.1:6080 user@server
 ```
 
-在电脑打开 `http://127.0.0.1:6080/vnc.html?autoconnect=true&resize=scale`，完成学校登录后运行 cli check。关闭 debug 与隧道，再恢复调度。学校挑战或密码拒绝时先人工核对，不连续自动重试。
+在电脑打开 `http://127.0.0.1:6080/vnc.html?autoconnect=true&resize=scale`，操作的是服务器上的专用浏览器。学校首次登录时输入本人账号密码，完成短信验证码并信任当前浏览器环境；不能用本机普通浏览器的信任状态代替。识别成功后调试任务自动退出，关闭 debug，再运行 `cli check`。学校挑战或密码拒绝时先人工核对，不连续自动重试。
+
+## 保存远端账号密码与更新配置
+
+首次短信验证与信任完成后，在**服务器实际运行目录**的私有 `.env` 中保存：
+
+```dotenv
+UESTC_USERNAME=<本人学校账号>
+UESTC_PASSWORD='<本人学校密码>'
+```
+
+文件保持 0600，密码中的特殊字符按 dotenv 规则引用；不保存短信验证码。只修改本机源码目录的 `.env` 不会更新服务器。配置与同一个 `browser-profile` 数据卷配合使用：优先恢复有效会话，失效后复用受信任环境尝试一次密码登录。再次出现短信验证或其他学校挑战时仍需人工处理，不保证永久免验证。
+
+在服务器运行目录按顺序操作。已有调度器先停止，再备份和编辑 `.env`；备份同样包含凭据，保持 0600：
+
+```bash
+docker compose --profile scheduled stop scheduler
+# 先将现有 .env 备份到权限受控的位置，再编辑服务器上的 .env
+chmod 600 .env
+# 确认 debug 已退出，避免争用浏览器 profile
+docker compose --profile debug stop debug
+# 会话有效则恢复，否则尝试一次密码登录；不签到、不发 QQ 消息
+docker compose run --rm cli login
+# 登录成功后验证微信授权复用；不签到、不发 QQ 消息
+docker compose run --rm cli wechat-ticket
+# 仅在上述验证成功后恢复调度，并加载修改后的环境变量
+docker compose --profile scheduled up -d --no-build --force-recreate scheduler
+```
+
+`login` 返回 `AUTHENTICATED / login_completed` 表示本次密码登录成功；`session_restored` 表示已有会话仍有效，本次没有验证密码。已有认证暂停标记时，先人工检查原因，再按需 `cli resume` 后重试一次 `cli login`，或使用 debug 完成验证。
+
+`docker compose restart scheduler` 不会重新加载 `.env`，必须重新创建容器。重新创建时保留原有数据卷，不删除 profile、微信授权或 `state.json`。使用外部 NapCat 网络时，以上命令均加 `-f compose.yaml -f compose.napcat.yaml`；已有 cloud 部署使用 `./scripts/cloud.sh` 代替 `docker compose`，按服务器权限需要加 `sudo`。
+
+调度日期在首次触发时已落盘，登录失败后也不会因重启或重新创建容器而自动补跑同一天。恢复登录后先用不发通知的 `status` 查询今日官方记录；确需补签时显式执行一次 `run`，不清空原有防重状态。账号密码配置和登录验证本身不执行签到。
 
 ## 云端扫码
 
@@ -50,9 +85,11 @@ docker cp goodnightuestc-authorize:/app/data/wechat-authorization.png /安全的
 | browser-profile/ | 学校浏览器会话 |
 | wechat/wechat.enc、wechat/wechat.key | 加密微信凭据及本地密钥 |
 | state.json | 每日业务结果、调度日期和通知队列 |
+| settings.json（启用管理页时） | 网页保存的学校账号密码与调度开关，优先于 .env |
+| admin-last-job.json（启用管理页时） | 最近管理操作的已过滤结果 |
 | auth-paused、task.lock、scheduler.lock | 认证暂停与任务锁 |
 
-备份前停止 scheduler、debug 与正在运行的一次性容器，确保浏览器关闭。分别备份 .env 和数据卷，备份目录 0700、文件 0600。备份包含授权，不上传公开仓库。
+备份前停止 scheduler、debug、已启用的 management 与正在运行的一次性容器，确保浏览器关闭。分别备份 .env 和数据卷，备份目录 0700、文件 0600。备份包含授权，不上传公开仓库。
 
 `docker compose down` 保留数据；`down -v` 删除本地默认卷，不作为重启方式。恢复卷时使用相同镜像架构和浏览器版本，并核对 pwuser 对数据目录的访问权限。不要只复制 state.json 或只复制微信密文而丢失对应密钥。
 
